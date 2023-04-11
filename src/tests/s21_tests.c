@@ -4,10 +4,10 @@ int main(void) {
 
   SRunner *sr;
 
-  Suite *aAA = s21_aAA_suite();
+  Suite *notation_convert = s21_notation_convert_suite();
   Suite *bBB = s21_bBB_suite();
 
-  sr = srunner_create(aAA);
+  sr = srunner_create(notation_convert);
   srunner_add_suite(sr, bBB);
 
   srunner_run_all(sr, CK_ENV);
