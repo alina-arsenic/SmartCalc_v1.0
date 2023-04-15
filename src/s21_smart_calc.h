@@ -7,7 +7,7 @@
 
 #include <stdio.h>
 
-#define MAX_LEN 255
+#define MAX_LEN 512
 
 int notation_convert(char *src, char *dst);
 

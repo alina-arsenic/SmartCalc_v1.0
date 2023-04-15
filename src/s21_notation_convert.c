@@ -43,6 +43,7 @@ int is_func(char *temp, reg_templates template) {
 }
 
 int number_process(char *temp, char *dst) {
+    printf("%s\n", dst);
     int i = 0; // сколько символов занимает число
     while (is_digit(temp[i])) i++;
     if (temp[i] == '.' && is_digit(temp[i+1])) {
@@ -50,106 +51,76 @@ int number_process(char *temp, char *dst) {
         while (is_digit(temp[i])) i++;
     }
     strncat(dst, temp, i);
+    //printf("i is %d\n", i);
     strcat(dst, " ");
-    memmove(temp, temp+i, strlen(temp));
-    return OK;
+    return i;
 }
 
-// начало жести
-
-/*
-1 - степень ^
-2 - унарные + -
-3 - умножение * деление / остаток mod
-4 - сложение + вычитание -
-0 - ОШИБКА
-*/
-int oper_priority(char *str, int digit, reg_templates template) {
-    if (digit && (str[0] == '^')) return 1;
-    if (!digit && (str[0] == '+' || str[0] == '-')) return 2;
-    if (digit && str[1] == 'u') return 2;  // если смотрим стек и находим флаг унарной операции
-    if (digit && (str[0] == '*' || str[0] == '/' || !regexec(&template.mod, str, 0, NULL, 0))) return 3;
+int oper_priority(char *str, int unar, reg_templates template) {
+    if (str[0] == '^') {
+        return 1;
+    } else if (unar && (str[0] == '+' || str[0] == '-')) {
+        return 2;
+    } else if (str[0] == '*' || str[0] == '/' || !regexec(&template.mod, str, 0, NULL, 0)) {
+        return 3;
+    } else if (!unar && (str[0] == '+' || str[0] == '-')) {
+        return 4;
+    }
     return 0;
 }
 
-int oper_process(char *temp, char *dst, stack *stack, int unar_oper) {
-    priority = oper_priority(temp, digit_before, template);
-            if (!priority) {
-                return BAD_INPUT;  // бинарный оператор с одним числом
+int oper_process(char *temp, char *dst, stack *stack, int unar, reg_templates template) {
+    char buf[MAX_LEN];
+    int priority = oper_priority(temp, unar, template);
+
+    if (!peek(stack, buf)) {  // стак не пустой
+        int stack_priority = oper_priority(buf, (buf[1] == 'u'), template);
+        // вершина стака является операцией && ее приоритет выше или равен
+        while (stack_priority && (stack_priority <= priority)) {
+            pop(stack, buf);
+            strncat(dst, buf, is_oper(buf, template));
+            strcat(dst, " ");
+            if (!peek(stack, buf)) {
+                stack_priority = oper_priority(buf, (buf[1] == 'u'), template);
+            } else {
+                break;  // стак стал пустым
             }
-            if (!peek(&stack, buf)) {  // стак не пустой
-                stack_priority = oper_priority(buf, 1, template);
+            
+        }
+    }
 
-                // вершина стака является операцией && ее приоритет выше или равен
-                while (stack_priority && (stack_priority <= priority)) {
-
-                    pop(&stack, buf);
-                    if (!regexec(&template.mod, buf, 0, NULL, 0)) strncat(dst, buf, 3);
-                    else strncat(dst, buf, 1);
-                    strcat(dst, " ");
-
-                    if (peek(&stack, buf)) break;  // стак стал пустым
-                    stack_priority = oper_priority(buf, 1, template);
-                }
-            }
-
-            if (!regexec(&template.mod, temp, 0, NULL, 0)) i = 3;
-            else i = 1;
-
-            strncpy(buf, temp, i);
-
-            if (priority == 2) {
-                strcat(buf, "u");  // флаг унарной операции
-            } else if (digit_before != 1) {
-                return BAD_INPUT;  // нет числа перед бинарной операцией
-            }
-
-            push(&stack, buf);
-            memmove(temp, temp+i, strlen(temp));
-    return OK;
+    int i = is_oper(temp, template);
+    strncpy(buf, temp, i);
+    buf[i] = '\0';
+    if (unar) buf[1] = 'u';
+    push(stack, buf);
+    return i;
 }
 
-int bracket_process(char *temp, char *dst, stack *stack) {
-    bracket = 0;
-            while (!peek(&stack, buf)) {  // пока стек не пустой
-                pop(&stack, buf);
-                if (buf[0] == '(') {
-                    bracket = 1;
-                    if (!peek(&stack, buf) && 
-                        (!regexec(&template.cos, buf, 0, NULL, 0) ||
-                        !regexec(&template.sin, buf, 0, NULL, 0) ||
-                        !regexec(&template.tan, buf, 0, NULL, 0) ||
-                        !regexec(&template.log, buf, 0, NULL, 0) ||
-                        !regexec(&template.acos, buf, 0, NULL, 0) ||
-                        !regexec(&template.asin, buf, 0, NULL, 0) ||
-                        !regexec(&template.atan, buf, 0, NULL, 0) ||
-                        !regexec(&template.sqrt, buf, 0, NULL, 0) ||
-                        !regexec(&template.ln, buf, 0, NULL, 0))) {
-                            pop(&stack, buf);
-                            strncat(dst, buf, 3);
-                            strcat(dst, " ");
-                        }
-                    break;
-                } else if (buf[0] == '+' || buf[0] == '-' ||
-                            buf[0] == '*' || buf[0] == '/' ||
-                            buf[0] == '^') {
-                    strncat(dst, buf, 1);
-                    strcat(dst, " ");
-                } else if (!regexec(&template.mod, buf, 0, NULL, 0)) {
-                    strncat(dst, buf, 3);
-                    strcat(dst, " ");
-                } else {
-                    break;
-                }
+int bracket_process(char *dst, stack *stack, reg_templates template) {
+    char buf[MAX_LEN];
+    int bracket = 0, i = 0;
+    while (!pop(stack, buf)) {  // пока стек не пустой
+        if (buf[0] == '(') {
+            bracket = 1;
+            if (!peek(stack, buf) && (i = is_func(buf, template))) {
+                strncat(dst, buf, i);
+                strcat(dst, " ");
+                pop(stack, buf);
             }
-            if (!bracket) {
-                return BAD_INPUT;  // стак закончился, открывающей скобки не найдено
-            }
-            memmove(temp, temp+1, strlen(temp));
+            break;
+        } else if ((i = is_oper(buf, template)) != 0) {
+            strncat(dst, buf, i);
+            strcat(dst, " ");
+        } else {
+            break;
+        }
+    }
+    if (!bracket) {
+        return BAD_INPUT;  // стак закончился, открывающей скобки не найдено
+    }
     return OK;
 }
-
-// конец жести
 
 int sort_station(char *src, char *dst, reg_templates template) {
 
@@ -160,9 +131,12 @@ int sort_station(char *src, char *dst, reg_templates template) {
     stack stack;
     init_stack(&stack);
 
-    int code, need_number = 1, unar_oper = 0;
+    int i, need_number = 1, unar_oper = 0;
 
     while (temp[0]) {
+        //printf("NOW TEMP IS '%s'\n", temp);
+        //printf("NOW DST IS '%s'\n", dst);
+        //show(&stack);
         // если в начале строки пробел, пропускаем его
         if (temp[0] == ' ') {
             memmove(temp, temp+1, strlen(temp));
@@ -171,7 +145,8 @@ int sort_station(char *src, char *dst, reg_templates template) {
         } else if (is_digit(temp[0])) {
             if (!need_number) // ожидался оператор, а не число
                 return BAD_INPUT;
-            number_process(temp, dst);
+            i = number_process(temp, dst);
+            memmove(temp, temp+i, strlen(temp));
             need_number = 0;
 
         // если в начале строки оператор
@@ -183,7 +158,8 @@ int sort_station(char *src, char *dst, reg_templates template) {
                     return BAD_INPUT;  // если ожидалось число, а оператор не + или -, ошибка
                 }
             }
-            oper_process(temp, dst, &stack, unar_oper);
+            i = oper_process(temp, dst, &stack, unar_oper, template);
+            memmove(temp, temp+i, strlen(temp));
             need_number = 1;
 
         // если в начале строки закрывающая скобка
@@ -191,17 +167,21 @@ int sort_station(char *src, char *dst, reg_templates template) {
             if (need_number) {  // еще не было встречнено ожидаемое число
                 return BAD_INPUT;
             }
-            if (code = bracket_process(temp, dst, &stack)) {
+            int code;
+            if ((code = bracket_process(dst, &stack, template)) != 0) {
                 return code;  // в расположении скобок ошибка
             }
+            memmove(temp, temp+1, strlen(temp));
             need_number = 0;
 
         // если в начале строки функция
-        } else if (code = is_func(temp, template)) {
+        } else if ((i = is_func(temp, template)) != 0) {
             if (!need_number) // ожидался оператор, а не функция
                 return BAD_INPUT;
-            strncpy(buf, temp, code);
+            strncpy(buf, temp, i);
+            buf[i] = '\0';
             push(&stack, buf);
+            memmove(temp, temp+i, strlen(temp));
             need_number = 1;
 
         // если открывающая скобка
@@ -209,7 +189,9 @@ int sort_station(char *src, char *dst, reg_templates template) {
             if (!need_number) // ожидался оператор, а не выражение
                 return BAD_INPUT;
             strncpy(buf, temp, 1);
+            buf[1] = '\0';
             push(&stack, buf);
+            memmove(temp, temp+1, strlen(temp));
             need_number = 1;
 
         } else {
@@ -219,6 +201,19 @@ int sort_station(char *src, char *dst, reg_templates template) {
     if (need_number) {
         return BAD_INPUT;
     }
+    while (!pop(&stack, buf)) {
+        i = is_oper(buf, template);
+        //printf("%d %s\n", i, buf);
+        if (!i) {  // лексем не осталось, а в стеке не оператор
+            return BAD_INPUT;
+        } else {
+            strncat(dst, buf, i);
+            strcat(dst, " ");
+            
+        }
+    }
+    dst[strlen(dst)-1] = '\0';  // убираем пробел в конце строки
+    //printf("'%s' LENGTH %ld\n", dst, strlen(dst));
     return OK;
 }
 
@@ -237,6 +232,7 @@ int notation_convert(char *src, char *dst) {
         regcomp(&template.mod, "^mod", 0)
         ) return CALC_ERROR;
 
+    memset(dst, 0, MAX_LEN);
     int code = sort_station(src, dst, template);
 
     regfree(&template.cos);

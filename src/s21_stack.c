@@ -25,7 +25,7 @@ int push(stack *pt, char *str) {
         return ERROR;
     }
     pt->top += 1;
-    pt->data[pt->top] = str;
+    strcpy(pt->data[pt->top], str);
     return OK;
 }
 
@@ -33,15 +33,21 @@ int peek(stack *pt, char *str) {
     if (is_empty(pt)) {
         return ERROR;
     }
-    *str = *pt->data[pt->top];
+    strcpy(str, pt->data[pt->top]);
     return OK;
 }
- 
+
 int pop(stack *pt, char *str) {
     if (is_empty(pt)) {
         return ERROR;
     }
-    *str = *pt->data[pt->top];
+    strcpy(str, pt->data[pt->top]);
     pt->top -= 1;
     return OK;
 }
+
+/*void show(stack *pt) {
+    for (int i = pt->top; i >= 0; i--) {
+        printf("STACK №%d %s\n", i, pt->data[i]);
+    }
+}*/
