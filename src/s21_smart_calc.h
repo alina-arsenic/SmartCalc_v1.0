@@ -1,6 +1,7 @@
 #ifndef SRC_S21_SMART_CALC_
 #define SRC_S21_SMART_CALC_
 
+#include <gtk/gtk.h>
 #include <stdlib.h>
 #include <string.h>
 #include <regex.h>
