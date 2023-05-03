@@ -1,46 +1,17 @@
 #include "s21_smart_calc.h"
-#include "s21_stack.h"
+#include "s21_notation.h"
+#include "s21_stack_string.h"
 
 #define OK 0
 #define BAD_INPUT 1
 #define CALC_ERROR 2
 
-typedef struct reg_templates {
-    regex_t cos, sin, tan, acos, asin,
-            atan, sqrt, ln, log, mod;
-} reg_templates;
-
-int is_digit(char c) {
-    return (c >= '0' && c <= '9');
-}
-
-// если в начале строки оператор, возвращает количество символов в нем, если нет, возваращает 0
-int is_oper(char *temp, reg_templates template) {
-    if (temp[0] == '+' || temp[0] == '-' || temp[0] == '*' || temp[0] == '/' || temp[0] == '^') {
-        return 1;
-    } else if (!regexec(&template.mod, temp, 0, NULL, 0)) {
-        return 3;
-    }
-    return 0;
-}
-
-// если в начале строки функция, возвращает количество символов в ней, если нет, возваращает 0
-int is_func(char *temp, reg_templates template) {
-    if (!regexec(&template.ln, temp, 0, NULL, 0)) {
-        return 2;
-    } else if (!regexec(&template.cos, temp, 0, NULL, 0) ||
-        !regexec(&template.sin, temp, 0, NULL, 0) ||
-        !regexec(&template.tan, temp, 0, NULL, 0) ||
-        !regexec(&template.log, temp, 0, NULL, 0)) {
-        return 3;
-    } else if (!regexec(&template.acos, temp, 0, NULL, 0) ||
-        !regexec(&template.asin, temp, 0, NULL, 0) ||
-        !regexec(&template.atan, temp, 0, NULL, 0) ||
-        !regexec(&template.sqrt, temp, 0, NULL, 0)) {
-        return 4;
-    }
-    return 0;
-}
+int notation_convert(char *src, char *dst);
+int number_process(char *temp, char *dst, int negative);
+int oper_priority(char *str, int unar, reg_templates template);
+int oper_process(char *temp, char *dst, stack_s *stack, int unar, int need_number, reg_templates template);
+int bracket_process(char *dst, stack_s *stack, reg_templates template);
+int sort_station(char *src, char *dst, reg_templates template);
 
 int number_process(char *temp, char *dst, int negative) {
     int i = 0;
@@ -72,18 +43,18 @@ int oper_priority(char *str, int unar, reg_templates template) {
     return 0;
 }
 
-int oper_process(char *temp, char *dst, stack *stack, int unar, int need_number, reg_templates template) {
+int oper_process(char *temp, char *dst, stack_s *stack, int unar, int need_number, reg_templates template) {
     char buf[MAX_LEN];
     int priority = oper_priority(temp, unar, template);
 
-    if (!peek(stack, buf)) {  // стак не пустой
+    if (!peek_s(stack, buf)) {  // стак не пустой
         int stack_priority = oper_priority(buf, (buf[1] == 'u'), template);
         // не ждем число && вершина стака является операцией && ее приоритет выше или равен
         while (!need_number && stack_priority && (stack_priority <= priority)) {
-            pop(stack, buf);
+            pop_s(stack, buf);
             strncat(dst, buf, is_oper(buf, template));
             strcat(dst, " ");
-            if (!peek(stack, buf)) {
+            if (!peek_s(stack, buf)) {
                 stack_priority = oper_priority(buf, (buf[1] == 'u'), template);
             } else {
                 break;  // стак стал пустым
@@ -96,21 +67,21 @@ int oper_process(char *temp, char *dst, stack *stack, int unar, int need_number,
     strncpy(buf, temp, i);
     buf[i] = '\0';
     if (unar) buf[1] = 'u';
-    push(stack, buf);
+    push_s(stack, buf);
     return i;
 }
 
-int bracket_process(char *dst, stack *stack, reg_templates template) {
+int bracket_process(char *dst, stack_s *stack, reg_templates template) {
     char buf[MAX_LEN];
     int bracket = 0, i = 0;
-    while (!pop(stack, buf)) {  // пока стек не пустой
+    while (!pop_s(stack, buf)) {  // пока стек не пустой
         if (buf[0] == '(') {
             bracket = 1;
-            if (!peek(stack, buf) && (i = is_func(buf, template))) {
+            if (!peek_s(stack, buf) && (i = is_func(buf, template))) {
                 if (buf[i] == '-') strcat(dst, "-");
                 strncat(dst, buf, i);
                 strcat(dst, " ");
-                pop(stack, buf);
+                pop_s(stack, buf);
             }
             break;
         } else if ((i = is_oper(buf, template)) != 0) {
@@ -132,8 +103,8 @@ int sort_station(char *src, char *dst, reg_templates template) {
     char temp[MAX_LEN];
     strncpy(temp, src, MAX_LEN);  // обработанные символы будут вырезаться из temp
     
-    stack stack;
-    init_stack(&stack);
+    stack_s stack;
+    init_stack_s(&stack);
 
     int i = 0, need_number = 1, unar_oper = 0, negative = 0;
 
@@ -197,7 +168,7 @@ int sort_station(char *src, char *dst, reg_templates template) {
             } else {
                 buf[i] = '\0';
             }
-            push(&stack, buf);
+            push_s(&stack, buf);
             memmove(temp, temp+i, strlen(temp));
             need_number = 1;
 
@@ -207,7 +178,7 @@ int sort_station(char *src, char *dst, reg_templates template) {
                 return BAD_INPUT;
             strncpy(buf, temp, 1);
             buf[1] = '\0';
-            push(&stack, buf);
+            push_s(&stack, buf);
             memmove(temp, temp+1, strlen(temp));
             need_number = 1;
 
@@ -218,7 +189,7 @@ int sort_station(char *src, char *dst, reg_templates template) {
     if (need_number) {
         return BAD_INPUT;
     }
-    while (!pop(&stack, buf)) {
+    while (!pop_s(&stack, buf)) {
         i = is_oper(buf, template);
         if (!i) {  // лексем не осталось, а в стеке не оператор
             return BAD_INPUT;
@@ -238,32 +209,14 @@ int notation_convert(char *src, char *dst) {
         return BAD_INPUT;
     }
 
-    reg_templates template;
-    if (regcomp(&template.cos, "^cos", 0) ||
-        regcomp(&template.sin, "^sin", 0) ||
-        regcomp(&template.tan, "^tan", 0) ||
-        regcomp(&template.log, "^log", 0) ||
-        regcomp(&template.acos, "^acos", 0) ||
-        regcomp(&template.asin, "^asin", 0) ||
-        regcomp(&template.atan, "^atan", 0) ||
-        regcomp(&template.sqrt, "^sqrt", 0) ||
-        regcomp(&template.ln, "^ln", 0) ||
-        regcomp(&template.mod, "^mod", 0)
-        ) return CALC_ERROR;
+    reg_templates templates;
+    compile_reg(&templates);
 
     memset(dst, 0, MAX_LEN);
-    int code = sort_station(src, dst, template);
+    
+    int code = sort_station(src, dst, templates);
 
-    regfree(&template.cos);
-    regfree(&template.sin);
-    regfree(&template.tan);
-    regfree(&template.acos);
-    regfree(&template.asin);
-    regfree(&template.atan);
-    regfree(&template.sqrt);
-    regfree(&template.ln);
-    regfree(&template.log);
-    regfree(&template.mod);
+    free_reg(&templates);
 
     return code;
 }
