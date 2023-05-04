@@ -24,6 +24,10 @@ static void calculate(GtkButton *button, gpointer data) {
 		gtk_entry_set_text(GTK_ENTRY(box), "");
 
 		int code = notation_convert(input_buffer, result);
+
+		double answer;
+		calculation(result, &answer);
+
 		if (!code) {
 			sprintf(output_buffer, "%s", result);
 		} else {
@@ -111,7 +115,7 @@ static void activate(GtkApplication *app, gpointer user_data) {
 	gtk_widget_show_all(numpad.window);
 
 }
-
+/*
 int main(int argc, char **argv) {
 	GtkApplication *app;
 	int status;
@@ -123,3 +127,4 @@ int main(int argc, char **argv) {
 
 	return status;
 }
+*/

@@ -52,4 +52,4 @@ gcov_report: test
 	$(OPEN) gcov_report/index.html
 
 debug:
-	gcc debug.c $(SRC); ./a.out
+	gcc debug.c $(PKG_FLAGS) $(SRC) $(PKG_LIBS) -lm; ./a.out
