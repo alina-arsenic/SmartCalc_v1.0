@@ -5,7 +5,7 @@ int main() {
     char src[MAX_LEN], dst[MAX_LEN];
     double result;
 
-    strcpy(src, "((1 * (2 - 2) mod 23324 + 2 / 7))");
+    strcpy(src, "-1/0");
     printf("\n%s\n", src);
 
     int code = notation_convert(src, dst);

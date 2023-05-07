@@ -52,7 +52,7 @@ int oper_process(char *temp, char *dst, stack_s *stack, int unar, int need_numbe
         // не ждем число && вершина стака является операцией && ее приоритет выше или равен
         while (!need_number && stack_priority && (stack_priority <= priority)) {
             pop_s(stack, buf);
-            strncat(dst, buf, is_oper(buf, template));
+            strncat(dst, buf, is_oper(buf, template)+1);
             strcat(dst, " ");
             if (!peek_s(stack, buf)) {
                 stack_priority = oper_priority(buf, (buf[1] == 'u'), template);
