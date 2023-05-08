@@ -1,4 +1,4 @@
-#include "s21_smart_calc.h"
+#include "lib/s21_smart_calc.h"
 
 typedef struct {
   GtkWidget *window;

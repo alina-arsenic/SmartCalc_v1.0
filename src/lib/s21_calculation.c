@@ -7,11 +7,11 @@
 #define BAD_DATA 2
 
 int calculation(char *src, double *result);
-int number_convert(char *temp, double *number);
+int number_convert(stack_d *stack, char *temp,int *negative);
 int oper_convert(char *temp, stack_d *stack, reg_templates template);
-int func_convert(char *temp, stack_d *stack, reg_templates template);
+int func_convert(char *temp, stack_d *stack, reg_templates template, int *negative);
 
-int number_convert(char *temp, double *number) {
+int number_convert(stack_d *stack, char *temp, int *negative) {
     int i = 0, dot = 0;
     while (is_digit(temp[i])) i++;
     if (temp[i] == '.' && is_digit(temp[i+1])) {
@@ -21,11 +21,17 @@ int number_convert(char *temp, double *number) {
     }
     if (dot == 0) dot = i+1;
 
-    *number = 0;
+    double number = 0;
     char buff[MAX_LEN];
     strncpy(buff, temp, i);
-    sscanf(buff, "%lf", number);
+    sscanf(buff, "%lf", &number);
+    
+    if (*negative) {
+        number *= -1;
+        *negative = 0;
+    }
 
+    push_d(stack, number);
     return i;  // возвращает сколько символов занимает число
 }
 
@@ -68,7 +74,7 @@ int oper_convert(char *temp, stack_d *stack, reg_templates template) {
     return OK;
 }
 
-int func_convert(char *temp, stack_d *stack, reg_templates template) {
+int func_convert(char *temp, stack_d *stack, reg_templates template, int *negative) {
     int i = is_func(temp, template);
     char buff[MAX_LEN] = {0};
     strncpy(buff, temp, i);
@@ -97,6 +103,12 @@ int func_convert(char *temp, stack_d *stack, reg_templates template) {
     } else {
         return BAD_DATA;
     }
+
+    if (*negative) {
+        c *= -1;
+        *negative = 0;
+    }
+
     push_d(stack, c);
     return OK;
 }
@@ -112,34 +124,34 @@ int calculation(char *src, double *result) {
     stack_d stack;
     init_stack_d(&stack);
     int i = 0, negative = 0;
-    double number = 0;
     strncpy(temp, src, MAX_LEN);  // обработанные символы будут вырезаться из temp
 
     while (temp[0]) {
+
+        // если в начале знак минус перед числом или функцией, убираем его и ставим флаг
+        if (temp[0] == '-' && (is_digit(temp[1]) || is_func(temp+1, templates))) {
+            negative = 1;
+            memmove(temp, temp+1, strlen(temp));
+        }
+
         // если в начале строки число
-        if (is_digit(temp[0]) || (negative = (temp[0] == '-' && is_digit(temp[1])))) {
-            if (negative) memmove(temp, temp+1, strlen(temp));
-            i = number_convert(temp, &number);
-            if (negative)  {
-                negative = 0;
-                number *= -1;
+        if (is_digit(temp[0])) {
+            i = number_convert(&stack, temp, &negative);
+            memmove(temp, temp+i, strlen(temp));
+
+        // если в начале строки функция
+        } else if ((i = is_func(temp, templates)) != 0) {
+            if (func_convert(temp, &stack, templates, &negative)) {
+                return CALC_ERROR;
             }
             memmove(temp, temp+i, strlen(temp));
-            push_d(&stack, number);
 
         // если в начале строки оператор
         } else if ((i = is_oper(temp, templates)) != 0) {
             if (oper_convert(temp, &stack, templates)) {
                 return CALC_ERROR;
             }
-            memmove(temp, temp+i, strlen(temp));
-
-        // если в начале строки функция
-        } else if ((i = is_func(temp, templates)) != 0) {
-            if (func_convert(temp, &stack, templates)) {
-                return CALC_ERROR;
-            }
-            memmove(temp, temp+i, strlen(temp));
+            memmove(temp, temp+i+(temp[i] == 'u'), strlen(temp));
 
         // иначе пропускаем символ
         } else {

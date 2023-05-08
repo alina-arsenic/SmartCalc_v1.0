@@ -65,8 +65,8 @@ int oper_process(char *temp, char *dst, stack_s *stack, int unar, int need_numbe
 
     int i = is_oper(temp, template);
     strncpy(buf, temp, i);
-    buf[i] = '\0';
     if (unar) buf[1] = 'u';
+    buf[i+unar] = '\0';
     push_s(stack, buf);
     return i;
 }
@@ -85,7 +85,7 @@ int bracket_process(char *dst, stack_s *stack, reg_templates template) {
             }
             break;
         } else if ((i = is_oper(buf, template)) != 0) {
-            strncat(dst, buf, i);
+            strcat(dst, buf);
             strcat(dst, " ");
         } else {
             break;
@@ -142,6 +142,7 @@ int sort_station(char *src, char *dst, reg_templates template) {
             }
             i = oper_process(temp, dst, &stack, unar_oper, need_number, template);
             memmove(temp, temp+i, strlen(temp));
+            unar_oper = 0;
             need_number = 1;
 
         // если в начале строки закрывающая скобка
@@ -194,9 +195,8 @@ int sort_station(char *src, char *dst, reg_templates template) {
         if (!i) {  // лексем не осталось, а в стеке не оператор
             return BAD_INPUT;
         } else {
-            strncat(dst, buf, i);
+            strcat(dst, buf);
             strcat(dst, " ");
-            
         }
     }
     dst[strlen(dst)-1] = '\0';  // убираем пробел в конце строки

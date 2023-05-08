@@ -4,7 +4,7 @@ TFLAGS = -lc --coverage
 PKG_FLAGS = `pkg-config --cflags gtk+-3.0`
 PKG_LIBS = `pkg-config --libs gtk+-3.0`
 PKG_TESTS = `pkg-config --cflags --libs check`
-SRC = s21_*.c
+SRC = lib/*.c
 OBJ = *.o
 TESTS_SRC = tests/*.c
 
@@ -17,7 +17,7 @@ endif
 all: clean s21_smart_calc.a test gcov_report
 
 gui: s21_smart_calc.a
-	gcc $(PKG_FLAGS) -o calculator $(SRC) $(PKG_LIBS)
+	gcc $(PKG_FLAGS) -o calculator $(SRC) gui.c $(PKG_LIBS)
 	./calculator
 
 #install
@@ -29,20 +29,19 @@ clean:
 	rm -f ./a.out
 	rm -rf ./tests/*.o ./tests/*.a ./tests/*.gcda ./tests/*.gcno ./tests/*.info
 	rm -rf VALGRIND.txt
-	rm calculator
+	rm -rf calculator
 
 #dvi
 #dist
 
 s21_smart_calc.a:
-#gcc $(CFLAGS) $(PKG_FLAGS) -c $(SRC) $(PKG_LIBS)
-	gcc $(PKG_FLAGS) -c $(SRC) $(PKG_LIBS)
+	gcc $(CFLAGS) $(PKG_FLAGS) -c $(SRC) $(PKG_LIBS)
 	ar rcs s21_smart_calc.a $(OBJ)
 	ranlib s21_smart_calc.a
 	rm -f *.o
 
 test: s21_smart_calc.a
-	gcc $(TESTS_SRC) $(SRC) -o ./tests/all_tests $(CFLAGS) $(PKG_TESTS) $(TFLAGS) s21_smart_calc.a
+	gcc $(CFLAGS) $(PKG_FLAGS) $(TESTS_SRC) $(SRC) -o ./tests/all_tests $(PKG_TESTS) $(PKG_LIBS) $(TFLAGS) s21_smart_calc.a
 	./tests/all_tests
 
 gcov_report: test

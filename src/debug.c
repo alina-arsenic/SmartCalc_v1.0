@@ -1,11 +1,11 @@
-#include "s21_smart_calc.h"
+#include "lib/s21_smart_calc.h"
 #include <stdio.h>
 
 int main() {
     char src[MAX_LEN], dst[MAX_LEN];
     double result;
 
-    strcpy(src, "-1/0");
+    strcpy(src, "-3.3/(-cos(5.5/1.2 * ++--4) * ln(+++238.4 - 2))");
     printf("\n%s\n", src);
 
     int code = notation_convert(src, dst);
