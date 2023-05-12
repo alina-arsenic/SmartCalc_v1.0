@@ -5,6 +5,7 @@
 
 int init_stack_d(stack_d *pt)
 {
+    for (int i = 0; i < MAX_LEN; i++) pt->data[i] = 0;
     pt->top = -1;
     return OK;
 }

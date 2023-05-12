@@ -7,11 +7,11 @@
 #define BAD_DATA 2
 
 int calculation(char *src, double *result);
-int number_convert(stack_d *stack, char *temp,int *negative);
+int number_convert(stack_d *stack, char *temp);
 int oper_convert(char *temp, stack_d *stack, reg_templates template);
-int func_convert(char *temp, stack_d *stack, reg_templates template, int *negative);
+int func_convert(char *temp, stack_d *stack, reg_templates template);
 
-int number_convert(stack_d *stack, char *temp, int *negative) {
+int number_convert(stack_d *stack, char *temp) {
     int i = 0, dot = 0;
     while (is_digit(temp[i])) i++;
     if (temp[i] == '.' && is_digit(temp[i+1])) {
@@ -22,14 +22,10 @@ int number_convert(stack_d *stack, char *temp, int *negative) {
     if (dot == 0) dot = i+1;
 
     double number = 0;
-    char buff[MAX_LEN];
+    char buff[MAX_LEN] = {0};
     strncpy(buff, temp, i);
+    //printf("BUF %s\n", buff);
     sscanf(buff, "%lf", &number);
-    
-    if (*negative) {
-        number *= -1;
-        *negative = 0;
-    }
 
     push_d(stack, number);
     return i;  // возвращает сколько символов занимает число
@@ -38,13 +34,17 @@ int number_convert(stack_d *stack, char *temp, int *negative) {
 int oper_convert(char *temp, stack_d *stack, reg_templates template) {
     int i = is_oper(temp, template);
     int unar = temp[i] == 'u';
+    int negative = temp[i] == 'n';
     char buff[MAX_LEN] = {0};
-    strncpy(buff, temp, i+unar);
+    strncpy(buff, temp, i+unar+negative);
 
-    double a, b, c;
+    double a = 0, b = 0, c = 0;
     pop_d(stack, &b);
 
-    if (!strcmp(buff, "+u")) {
+    if (!strcmp(buff, "-n")) {
+        c = b * (-1);
+        //printf("%lf %lf\n", b, c);
+    } else if (!strcmp(buff, "+u")) {
         c = b + 1;
     } else if (!strcmp(buff, "-u")) {
         c = b - 1;
@@ -61,20 +61,23 @@ int oper_convert(char *temp, stack_d *stack, reg_templates template) {
         } else if (!strcmp(buff, "+")) {
             c = a + b;
         } else if (!strcmp(buff, "-")) {
+            //printf("%lf %lf\n", a, b);
             c = a - b;
+            //printf("%lf %lf %lf\n", a, b, c);
         } else {
             return BAD_DATA;
         }
     }
-    if (!isnormal(c)) {
+    if (isnan(c) || isinf(c)) {
         return CALC_ERROR;
     }
 
     push_d(stack, c);
+    //show_d(stack);
     return OK;
 }
 
-int func_convert(char *temp, stack_d *stack, reg_templates template, int *negative) {
+int func_convert(char *temp, stack_d *stack, reg_templates template) {
     int i = is_func(temp, template);
     char buff[MAX_LEN] = {0};
     strncpy(buff, temp, i);
@@ -104,11 +107,6 @@ int func_convert(char *temp, stack_d *stack, reg_templates template, int *negati
         return BAD_DATA;
     }
 
-    if (*negative) {
-        c *= -1;
-        *negative = 0;
-    }
-
     push_d(stack, c);
     return OK;
 }
@@ -123,25 +121,19 @@ int calculation(char *src, double *result) {
     char temp[MAX_LEN];
     stack_d stack;
     init_stack_d(&stack);
-    int i = 0, negative = 0;
+    int i = 0;
     strncpy(temp, src, MAX_LEN);  // обработанные символы будут вырезаться из temp
 
     while (temp[0]) {
-
-        // если в начале знак минус перед числом или функцией, убираем его и ставим флаг
-        if (temp[0] == '-' && (is_digit(temp[1]) || is_func(temp+1, templates))) {
-            negative = 1;
-            memmove(temp, temp+1, strlen(temp));
-        }
-
+        
         // если в начале строки число
         if (is_digit(temp[0])) {
-            i = number_convert(&stack, temp, &negative);
+            i = number_convert(&stack, temp);
             memmove(temp, temp+i, strlen(temp));
 
         // если в начале строки функция
         } else if ((i = is_func(temp, templates)) != 0) {
-            if (func_convert(temp, &stack, templates, &negative)) {
+            if (func_convert(temp, &stack, templates)) {
                 return CALC_ERROR;
             }
             memmove(temp, temp+i, strlen(temp));

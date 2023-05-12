@@ -8,7 +8,7 @@ void compare_calc(char src[], double answer) {
     int code = notation_convert(src, dst);
     printf("%s\n", dst);
     if (!code) code += calculation(dst, &result);
-    printf("%s = %.7lf\n", src, result);
+    printf("%s = %.7lf\n\n", src, result);
     ck_assert_int_eq(code, 0);
     ck_assert_double_eq_tol(result, answer, TOL);
 }
@@ -24,6 +24,22 @@ void failure_calc(char src[]) {
 START_TEST(test_s21_calculation_basic) {
     compare_calc("2+2", 4.0);
     compare_calc("2-2", 0.0);
+    compare_calc("2-(-2)", 4.0);
+    compare_calc("2--2", 4.0);
+    compare_calc("2*-2", -4.0);
+    compare_calc("-2", -2.0);
+    compare_calc("-(2)", 1.0);
+    
+    compare_calc("-(--(5))", -3.0);
+    compare_calc("---(5)", 2.0);
+    compare_calc("1+-(--(5))", -2.0);
+    compare_calc("1--(--(5))", 4.0);
+    compare_calc("1----(5)", -1.0);
+    compare_calc("1----(5.3)", -1.3);
+
+    failure_calc("1---(--(5))");
+    failure_calc("--2");
+    failure_calc("4(-2)");
 }
 END_TEST
 
