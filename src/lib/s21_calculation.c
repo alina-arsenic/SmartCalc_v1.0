@@ -21,12 +21,14 @@ int number_convert(stack_d *stack, char *temp) {
     }
     if (dot == 0) dot = i+1;
 
-    double number = 0;
+    double number = 0, test = 0;
     char buff[MAX_LEN] = {0};
     strncpy(buff, temp, i);
-    //printf("BUF %s\n", buff);
+    sscanf(buff, "%lf", &test);
+    char *dot_point = strchr(buff, '.');
+    if (dot_point) *dot_point = ',';
     sscanf(buff, "%lf", &number);
-
+    if (fabs(test) > fabs(number)) number = test;
     push_d(stack, number);
     return i;  // возвращает сколько символов занимает число
 }
@@ -105,6 +107,9 @@ int func_convert(char *temp, stack_d *stack, reg_templates template) {
         c = log10(a);
     } else {
         return BAD_DATA;
+    }
+    if (isnan(c) || isinf(c)) {
+        return CALC_ERROR;
     }
 
     push_d(stack, c);

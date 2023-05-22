@@ -1,12 +1,15 @@
 PLATFORM := $(shell uname)
-CFLAGS = -std=c11 -Wall -Werror -Wextra
-TFLAGS = -lc --coverage
-PKG_FLAGS = `pkg-config --cflags gtk+-3.0`
-PKG_LIBS = `pkg-config --libs gtk+-3.0`
-PKG_TESTS = `pkg-config --cflags --libs check`
-SRC = lib/*.c
+
+FLAGS = `pkg-config --cflags gtk+-3.0`
+LIBS = `pkg-config --libs gtk+-3.0` -lm
+
+CONTROL_FLAGS = -std=c11 -Wall -Werror -Wextra
+TEST_FLAGS = `pkg-config --cflags --libs check` -lc --coverage
+
 OBJ = *.o
-TESTS_SRC = tests/*.c
+LIB_SRC = lib/*.c
+GUI_SRC = gui_*.c
+TEST_SRC = tests/*.c
 
 ifeq ($(PLATFORM), Linux)
 OPEN = xdg-open 
@@ -14,10 +17,10 @@ else
 OPEN = open
 endif
 
-all: clean s21_smart_calc.a test gcov_report
+all: clean s21_smart_calc.a test gcov_report gui
 
 gui: s21_smart_calc.a
-	gcc $(PKG_FLAGS) -o calculator $(SRC) gui.c $(PKG_LIBS)
+	gcc $(FLAGS) -o calculator $(LIB_SRC) $(GUI_SRC) $(LIBS)
 	./calculator
 
 #install
@@ -35,13 +38,13 @@ clean:
 #dist
 
 s21_smart_calc.a:
-	gcc $(CFLAGS) $(PKG_FLAGS) -c $(SRC) $(PKG_LIBS)
+	gcc $(CONTROL_FLAGS) $(FLAGS) -c $(LIB_SRC) $(LIBS)
 	ar rcs s21_smart_calc.a $(OBJ)
 	ranlib s21_smart_calc.a
 	rm -f *.o
 
 test: s21_smart_calc.a
-	gcc $(CFLAGS) $(PKG_FLAGS) $(TESTS_SRC) $(SRC) -o ./tests/all_tests $(PKG_TESTS) $(PKG_LIBS) $(TFLAGS) s21_smart_calc.a
+	gcc $(CONTROL_FLAGS) $(FLAGS) $(TEST_SRC) $(LIB_SRC) -o ./tests/all_tests $(LIBS) $(TEST_FLAGS) s21_smart_calc.a
 	./tests/all_tests
 
 gcov_report: test
@@ -51,4 +54,5 @@ gcov_report: test
 	$(OPEN) gcov_report/index.html
 
 debug:
-	gcc debug.c $(PKG_FLAGS) $(SRC) $(PKG_LIBS) -lm; ./a.out
+#	gcc debug.c $(FLAGS) $(LIB_SRC) $(LIBS); ./a.out
+	gcc debug.c $(FLAGS) $(LIBS); ./a.out

@@ -15,6 +15,6 @@ int is_full_s(stack_s *pt);
 int push_s(stack_s *pt, char *str);
 int peek_s(stack_s *pt, char *str);
 int pop_s(stack_s *pt, char *str);
-void show_s(stack_s *pt);
+//void show_s(stack_s *pt);
 
 #endif  //  SRC_S21_STACK_STRING_

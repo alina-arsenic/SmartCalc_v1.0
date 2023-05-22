@@ -46,8 +46,10 @@ int pop_s(stack_s *pt, char *str) {
     return OK;
 }
 
+/*
 void show_s(stack_s *pt) {
     for (int i = pt->top; i >= 0; i--) {
         printf("STACK №%d %s\n", i, pt->data[i]);
     }
 }
+*/

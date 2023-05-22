@@ -15,6 +15,6 @@ int is_full_d(stack_d *pt);
 int push_d(stack_d *pt, double num);
 int peek_d(stack_d *pt, double *num);
 int pop_d(stack_d *pt, double *num);
-void show_d(stack_d *pt);
+//void show_d(stack_d *pt);
 
 #endif  //  SRC_S21_STACK_DOUBLE_
