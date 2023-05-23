@@ -13,6 +13,7 @@
 
 typedef struct {
   GtkWidget *window;
+  GtkWidget *notebook;
   GtkWidget *grid;
   GtkWidget *button[33];
 } s21_numpad;

@@ -3,6 +3,7 @@
 #include "lib/s21_notation.h"
 
 GtkDrawingArea *drawingArea;
+cairo_t *cr;
 GtkWidget *label;
 GtkWidget *image;
 GtkWidget *box;
@@ -10,6 +11,7 @@ s21_limits limits;
 s21_numpad numpad;
 char output_buffer[MAX_LEN] = {0};
 char input_buffer[MAX_LEN] = {0};
+char expr[MAX_LEN] = {0};
 
 int check_x_count(char *expr) {
 	int count = 0;
@@ -88,19 +90,21 @@ int make_plot(char *expr) {
 	GdkWindow *window = gtk_widget_get_window((GtkWidget*)drawingArea);
 	cairo_region_t *cairoRegion = cairo_region_create();
 	GdkDrawingContext *drawingContext = gdk_window_begin_draw_frame (window, cairoRegion);
-	cairo_t *cr = gdk_drawing_context_get_cairo_context (drawingContext);
-
-	double min = 0, max = 0;
+	cr = gdk_drawing_context_get_cairo_context (drawingContext);
 
 	fill_area(cr);
 	draw_border(cr);
-	draw_axis(cr, limits);
-	draw_plot(cr, limits, expr, &min, &max);
-	
-	if (limits.y1 > max || limits.y2 < min) {
-		char buf[MAX_LEN] = {0};
-		sprintf(buf, "Graph is not visible, y ∈ [ %g ; %g ]", min, max);
-		gtk_label_set_text(GTK_LABEL(label), buf);
+
+	if (expr[0]) {
+		double min = 0, max = 0;
+		draw_axis(cr, limits);
+		draw_plot(cr, limits, expr, &min, &max);
+
+		if (limits.y1 > max || limits.y2 < min) {
+			char buf[MAX_LEN] = {0};
+			sprintf(buf, "Graph is not visible, y ∈ [ %g ; %g ]", min, max);
+			gtk_label_set_text(GTK_LABEL(label), buf);
+		}
 	}
 
 	gdk_window_end_draw_frame(window, drawingContext);
@@ -109,48 +113,37 @@ int make_plot(char *expr) {
 	return 0;
 }
 
-void reset_plot() {
-	GdkWindow *window = gtk_widget_get_window((GtkWidget*)drawingArea);
-	cairo_region_t *cairoRegion = cairo_region_create();
-	GdkDrawingContext *drawingContext = gdk_window_begin_draw_frame (window, cairoRegion);
-	cairo_t *cr = gdk_drawing_context_get_cairo_context (drawingContext);
-
-	fill_area(cr);
-	draw_border(cr);
-
-	gdk_window_end_draw_frame(window, drawingContext);
-	cairo_region_destroy(cairoRegion);
-
-}
-
 void calculate(GtkButton *button, gpointer data) {
 	
-	char notation[MAX_LEN] = {0};
 	double result = 0;
 	const gchar* text = gtk_button_get_label(button);
 	gtk_label_set_text(GTK_LABEL(label), "");
 
+	memset(expr, 0, MAX_LEN);
+	//make_plot(expr);
+
 	if (strcmp("=", text) == 0) {
 
-		reset_plot();
 		memset(input_buffer, 0, MAX_LEN);
 		memset(output_buffer, 0, MAX_LEN);
+		//memset(expr, 0, MAX_LEN);
+		//make_plot(expr);
 		strcat(input_buffer, gtk_entry_get_text(GTK_ENTRY(box)));
 		//gtk_entry_set_text(GTK_ENTRY(box), "");
 
-		int code = notation_convert(input_buffer, notation);
+		int code = notation_convert(input_buffer, expr);
 		if (!code) {
 			if (strchr(input_buffer, 'x')) {
 				code += check_limits(&limits);
 				if (code == 0) {
-					code += check_x_count(notation);
+					code += check_x_count(expr);
 					if (code == 0) {
 						char buf[MAX_LEN] = {0};
 						double x_scale = fabs(limits.x1 - limits.x2) / (double)(DISPLAY_WIDTH);
 						double y_scale = fabs(limits.y1 - limits.y2) / (double)(DISPLAY_HEIGHT);
 						sprintf(buf, "X   1 : %g      Y   1 : %g", x_scale, y_scale);
 						gtk_label_set_text(GTK_LABEL(label), buf);
-						make_plot(notation);
+						make_plot(expr);
 					} else {
 						gtk_label_set_text(GTK_LABEL(label), "No more than 15 'x' please");
 					}
@@ -167,7 +160,8 @@ void calculate(GtkButton *button, gpointer data) {
 					}
 				}
 			} else {
-				code += calculation(notation, &result);
+				code += calculation(expr, &result);
+				memset(expr, 0, MAX_LEN);
 				if (!code) {
 					sprintf(output_buffer, "%.7lf", result);
 					char *dot_point = strchr(output_buffer, ',');
@@ -182,7 +176,8 @@ void calculate(GtkButton *button, gpointer data) {
 		}
 
 	} else if (strcmp("C", text) == 0) {
-		reset_plot();
+		//memset(expr, 0, MAX_LEN);
+		//make_plot(expr);
 		gtk_entry_set_text(GTK_ENTRY(box), "");
 
 	} else if (strcmp("clear X", text) == 0) {
@@ -203,7 +198,8 @@ void calculate(GtkButton *button, gpointer data) {
 }
 
 gboolean on_draw (GtkWidget *widget, GdkEventExpose *event, gpointer data) {
-	reset_plot();
+	make_plot(expr);
+	//if (cr) cairo_restore(cr);
 	return FALSE;
 }
 
@@ -219,8 +215,11 @@ void activate(GtkApplication *app, gpointer user_data) {
 	gtk_container_set_border_width(GTK_CONTAINER(numpad.window), BORDER_SIZE);
 
 	// создание решетки-каркаса для виджетов
+	numpad.notebook = gtk_notebook_new();
+	gtk_notebook_set_show_border(GTK_NOTEBOOK(numpad.notebook), FALSE);
 	numpad.grid = gtk_grid_new();
-	gtk_container_add(GTK_CONTAINER(numpad.window), numpad.grid);
+	gtk_notebook_append_page(GTK_NOTEBOOK(numpad.notebook), numpad.grid, NULL);
+	gtk_container_add(GTK_CONTAINER(numpad.window), numpad.notebook);
 
 	// создание окна ввода выражения и вывода результата
   	box = gtk_entry_new();

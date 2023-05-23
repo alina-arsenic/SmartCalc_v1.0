@@ -2,7 +2,7 @@
 
 void fill_area(cairo_t *cr) {
     cairo_set_source_rgb (cr, 1.0, 1.0, 1.0);
-	cairo_paint (cr);
+	cairo_paint(cr);
 }
 
 void draw_border(cairo_t *cr) {
@@ -13,7 +13,7 @@ void draw_border(cairo_t *cr) {
 	cairo_line_to (cr, DISPLAY_WIDTH-step, DISPLAY_HEIGHT-step);
 	cairo_line_to (cr, DISPLAY_WIDTH-step, step);
 	cairo_line_to (cr, step, step);
-	cairo_stroke (cr);
+	cairo_stroke(cr);
 }
 
 void draw_axis(cairo_t *cr, s21_limits lims) {
@@ -29,7 +29,7 @@ void draw_axis(cairo_t *cr, s21_limits lims) {
 		cairo_move_to (cr, 0.0, DISPLAY_HEIGHT*k);
     	cairo_line_to (cr, DISPLAY_WIDTH, DISPLAY_HEIGHT*k);
 	}
-	cairo_stroke (cr);
+	cairo_stroke(cr);
 }
 
 void replace_x(char *src, char *dst, double num) {
@@ -141,6 +141,6 @@ int draw_plot(cairo_t *cr, s21_limits lims, char *expr, double *min, double *max
 		}
 		x += x_delta;
 	}
-	cairo_stroke (cr);
+	cairo_stroke(cr);
 	return 0;
 }
