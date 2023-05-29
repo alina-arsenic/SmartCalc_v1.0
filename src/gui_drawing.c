@@ -68,7 +68,7 @@ int find_closest(char *expr, s21_limits lims, double k_x, double k_y, double x, 
 	char modified_expr[MAX_LEN];
 	int count = 0, stop = 0;
 	double canvas_x, canvas_y;
-	while (count < 10 && !stop) {
+	while (count < 100 && !stop) {
 		replace_x(expr, modified_expr, x_mid);
 		if (calculation(modified_expr, &y) == 0) {
 			canvas_x = (x-lims.x1)*k_x;
@@ -93,7 +93,7 @@ int find_closest(char *expr, s21_limits lims, double k_x, double k_y, double x, 
 
 int draw_plot(cairo_t *cr, s21_limits lims, char *expr, double *min, double *max) {
 	cairo_set_source_rgb (cr, 0.0, 0.5, 1.0);
-	int x_count = DISPLAY_WIDTH;
+	int x_count = DISPLAY_WIDTH*10;
 	int y_count = DISPLAY_HEIGHT;
 	double y, x = lims.x1;
 	double x_total = fabs(lims.x1 - lims.x2);

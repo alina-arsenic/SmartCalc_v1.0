@@ -2,6 +2,8 @@
 #include "gui_utils.h"
 #include "lib/s21_notation.h"
 
+#define BUFFER_LENGTH 4096*2
+
 s21_limits limits;
 s21_numpad numpad;
 s21_credit credit;
@@ -24,17 +26,6 @@ int parse_double(char *str, double *result) {
     if (dot_point) *dot_point = ',';
     sscanf(str, "%lf", result);
     if (fabs(test) > fabs(*result)) *result = test;
-	return 0;
-}
-
-int parse_integer(char *str, int *result) {
-	int i = 0;
-	if (str[i] == '-') i++;
-	while (is_digit(str[i])) i++;
-	if (i != strlen(str)) {
-		return 1;
-	}
-    sscanf(str, "%d", result);
 	return 0;
 }
 
@@ -65,9 +56,11 @@ int check_input() {
 	strcat(buf, gtk_entry_get_text(GTK_ENTRY(credit.entry_term)));
 	if (buf[0] == '\0') {
 		return 1;
-	} else if (parse_integer(buf, &credit.value_term)) {
+	} else if (parse_double(buf, &credit.value_term)) {
 		return 2;
-	} else if ((credit.value_term < 1) || (credit.value_term > 600)) {
+	} else if (trunc(credit.value_term) != credit.value_term) {
+		return 7;
+	} else if ((credit.value_term < 1.0) || (credit.value_term > 240.0)) {
 		return 4;
 	}
 	memset(buf, 0, MAX_LEN);
@@ -76,7 +69,7 @@ int check_input() {
 		return 1;
 	} else if (parse_double(buf, &credit.value_rate)) {
 		return 2;
-	} else if ((credit.value_rate <= 0.0) || (credit.value_rate > 999.0)) {
+	} else if ((credit.value_rate <= 0.0) || (credit.value_rate > 99.0)) {
 		return 5;
 	}
 	if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(credit.button[2])) == FALSE
@@ -89,10 +82,94 @@ int check_input() {
 	if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(credit.button[3]))) {
 		credit.credit_type = 2;
 	}
+	credit.value_rate /= 100.0;
 	return 0;
 }
 
+void annuity_calc(char *text) {
+	double i = credit.value_rate / 12;
+	double n = credit.value_term;
+	double k = i*pow((1+i),n) / (pow(1+i, n)-1);
+	double month_pay = k*credit.value_amount;
+	double total_pay = month_pay * n;
+	double overpay = total_pay - credit.value_amount;
+	char buf[MAX_LEN] = {0};
+	sprintf(buf, "Monthly payment:       %lf\n", month_pay);
+	strcat(text, buf);
+	memset(buf, 0, MAX_LEN);
+	sprintf(buf, "Overpay:                           %lf\n", overpay);
+	strcat(text, buf);
+	memset(buf, 0, MAX_LEN);
+	sprintf(buf, "Total payment:              %lf\n", total_pay);
+	strcat(text, buf);
+}
+
+/*
+int year_days(int n) {
+	if ((n % 4 == 0 && n % 100 !=0 ) || n % 400 == 0) {
+		return 366;
+	} else {
+		return 356;
+	}
+}
+
+int month_days(int n, int leap) {
+	if (n == 2) {
+		if (leap) return 29;
+		else return 28;
+	} else if (n == 4 || n == 6 || n == 9 || n == 11) {
+		return 30;
+	} else {
+		return 31;
+	}
+}
+*/
+
+void differen_calc(char *text) {
+	char buf[MAX_LEN] = {0};
+	char text_temp[BUFFER_LENGTH] = {0};
+
+	time_t time_raw_format;
+    time(&time_raw_format);
+	int month, year;
+    strftime(buf, MAX_LEN, "%m", localtime(&time_raw_format));
+	sscanf(buf, "%d", &month);
+	strftime(buf, MAX_LEN, "%Y", localtime(&time_raw_format));
+	sscanf(buf, "%d", &year);
+
+	double m = 0;
+	double P = credit.value_amount;
+	double i = credit.value_rate / 12;
+	double n = credit.value_term;
+	double D = 0, total_pay = 0;
+
+	while (m < n) {
+		memset(buf, 0, MAX_LEN);
+		D = P / n + (P - m * (P / n)) * i;
+		sprintf(buf, "%02d.%d       %lf\n", month, year, D);
+		strcat(text_temp, buf);
+		total_pay += D;
+		m += 1;
+	}
+
+	memset(buf, 0, MAX_LEN);
+	sprintf(buf, "Total payment:              %lf\n", total_pay);
+	strcat(text, buf);
+	memset(buf, 0, MAX_LEN);
+	sprintf(buf, "Overpay:                           %lf\n", total_pay - credit.value_amount);
+	strcat(text, buf);
+	memset(buf, 0, MAX_LEN);
+	sprintf(buf, "Monthly payments:\n\n");
+	strcat(text, buf);
+	strcat(text, text_temp);
+
+}
+
 void credit_calculate(GtkButton *button, gpointer data) {
+	GtkTextBuffer *empty_buffer = gtk_text_buffer_new(NULL);
+	char empty_text[1] = {0};
+	gtk_text_buffer_set_text(empty_buffer, empty_text, strlen(empty_text));
+	gtk_text_view_set_buffer(GTK_TEXT_VIEW(credit.text_wall), empty_buffer);
 	int code = check_input();
 	if (code == 1) {
 		gtk_label_set_text(GTK_LABEL(credit.message), "Please fill all entries");
@@ -101,14 +178,24 @@ void credit_calculate(GtkButton *button, gpointer data) {
 	} else if (code == 3) {
 		gtk_label_set_text(GTK_LABEL(credit.message), "Credit amount must be >0 and <=1000000000000 RUB");
 	} else if (code == 4) {
-		gtk_label_set_text(GTK_LABEL(credit.message), "Term must be >=1 and <=600 mounth");
+		gtk_label_set_text(GTK_LABEL(credit.message), "Term must be >=1 and <=240 mounth");
 	} else if (code == 5) {
-		gtk_label_set_text(GTK_LABEL(credit.message), "Interest rate must be >0 and <=999 \%");
+		gtk_label_set_text(GTK_LABEL(credit.message), "Interest rate must be >0 and <=99 \%");
 	} else if (code == 6) {
 		gtk_label_set_text(GTK_LABEL(credit.message), "Please choose type of monthly payments");
+	} else if (code == 7) {
+		gtk_label_set_text(GTK_LABEL(credit.message), "Term must be integer");
 	} else if (code == 0) {
 		gtk_label_set_text(GTK_LABEL(credit.message), "");
-		//
+		GtkTextBuffer *result_buffer = gtk_text_buffer_new(NULL);
+		char result_text[BUFFER_LENGTH] = {0};
+		if (credit.credit_type == 1) {
+			annuity_calc(result_text);
+		} else {
+			differen_calc(result_text);
+		}
+		gtk_text_buffer_set_text(result_buffer, result_text, strlen(result_text));
+		gtk_text_view_set_buffer(GTK_TEXT_VIEW(credit.text_wall), result_buffer);
 	}
 }
 
@@ -150,17 +237,27 @@ void activate(GtkApplication *app, gpointer user_data) {
 	credit.label[0] = gtk_label_new("Credit amount");
 	credit.label[1] = gtk_label_new("Credit term");
 	credit.label[2] = gtk_label_new("Interest rate");
-	credit.label[3] = gtk_label_new("RUB");
-	credit.label[4] = gtk_label_new("Months");
-	credit.label[5] = gtk_label_new("\%");
-	credit.label[6] = gtk_label_new("Type of monthly payments");
-	credit.message = gtk_label_new("Message");
+	credit.label[3] = gtk_label_new(" RUB");
+	credit.label[4] = gtk_label_new(" Months");
+	credit.label[5] = gtk_label_new(" \%");
+	credit.label[6] = gtk_label_new("Type of monthly payments  ");
+	credit.message = gtk_label_new("");
 	for (int i = 0; i < 7; i++) {
 		gtk_label_set_xalign(GTK_LABEL(credit.label[i]), 0.0);
 	}
 	gtk_label_set_xalign(GTK_LABEL(credit.message), 0.0);
+
 	credit.text_wall = gtk_text_view_new();
 	gtk_text_view_set_editable(GTK_TEXT_VIEW(credit.text_wall), FALSE);
+
+	//credit.scrollbar = gtk_scrollbar_new(GTK_ORIENTATION_VERTICAL, gtk_scrollable_get_vadjustment(GTK_SCROLLABLE(credit.text_wall)));
+
+	credit.scrolled_window = gtk_scrolled_window_new (NULL, NULL);
+	gtk_container_add (GTK_CONTAINER(credit.scrolled_window), credit.text_wall);
+	gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(credit.scrolled_window), GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
+
+	gtk_widget_set_size_request(credit.scrolled_window, APP_WIDTH - BORDER_SIZE*2, APP_HEIGHT*3/4-BORDER_SIZE);
+
 	gtk_grid_attach(GTK_GRID(credit.grid), credit.label[0], 0, 0, 1, 1);
 	gtk_grid_attach(GTK_GRID(credit.grid), credit.label[1], 0, 1, 1, 1);
 	gtk_grid_attach(GTK_GRID(credit.grid), credit.label[2], 0, 2, 1, 1);
@@ -172,7 +269,8 @@ void activate(GtkApplication *app, gpointer user_data) {
 	gtk_grid_attach(GTK_GRID(credit.grid), credit.label[5], 2, 2, 1, 1);
 	gtk_grid_attach(GTK_GRID(credit.grid), credit.label[6], 0, 3, 1, 1);
 	gtk_grid_attach(GTK_GRID(credit.grid), credit.message, 0, 6, 4, 1);
-	gtk_grid_attach(GTK_GRID(credit.grid), credit.text_wall, 0, 7, 1, 1);
+	//gtk_grid_attach(GTK_GRID(credit.grid), credit.text_wall, 0, 7, 3, 1);
+	gtk_grid_attach(GTK_GRID(credit.grid), credit.scrolled_window, 0, 7, 3, 1);
 
 	credit.button[0] = gtk_button_new_with_label("Calculate");
 	credit.button[1] = gtk_button_new_with_label("Reset");
@@ -189,6 +287,25 @@ void activate(GtkApplication *app, gpointer user_data) {
 	gtk_grid_attach(GTK_GRID(credit.grid), credit.button[2], 1, 3, 1, 1);
 	gtk_grid_attach(GTK_GRID(credit.grid), credit.button[3], 1, 4, 1, 1);
 	
+	gtk_grid_insert_row(GTK_GRID(credit.grid), 7);
+	space = gtk_label_new("");
+	gtk_grid_attach(GTK_GRID(credit.grid), space, 0, 7, 1, 1);
+	gtk_grid_insert_row(GTK_GRID(credit.grid), 6);
+	space = gtk_label_new("");
+	gtk_grid_attach(GTK_GRID(credit.grid), space, 0, 6, 1, 1);
+	gtk_grid_insert_row(GTK_GRID(credit.grid), 5);
+	space = gtk_label_new("");
+	gtk_grid_attach(GTK_GRID(credit.grid), space, 0, 5, 1, 1);
+	gtk_grid_insert_row(GTK_GRID(credit.grid), 3);
+	space = gtk_label_new("");
+	gtk_grid_attach(GTK_GRID(credit.grid), space, 0, 3, 1, 1);
+	gtk_grid_insert_row(GTK_GRID(credit.grid), 0);
+	space = gtk_label_new("");
+	gtk_grid_attach(GTK_GRID(credit.grid), space, 0, 0, 1, 1);
+
+	GtkWidget *image = gtk_image_new_from_file("images/kitty1.png");
+    gtk_grid_attach(GTK_GRID(credit.grid), image, 2, 5, 1, 5);
+
 
 	// создание окна ввода выражения и вывода результата
   	numpad.box = gtk_entry_new();
@@ -227,7 +344,7 @@ void activate(GtkApplication *app, gpointer user_data) {
 	gtk_grid_attach(GTK_GRID(upper_grid), numpad.label, 0, 3, 7, 1);
 
 	// создание картинки
-	GtkWidget *image = gtk_image_new_from_file("images/kitty2.png");
+	image = gtk_image_new_from_file("images/kitty2.png");
     gtk_grid_attach(GTK_GRID(upper_grid), image, 7, 0, 1, 4);
 
 	// скрепление областей

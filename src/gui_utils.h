@@ -2,6 +2,7 @@
 #define SRC_GUI_UTILS_H_
 
 #include "lib/s21_smart_calc.h"
+#include <time.h>
 
 #define BORDER_SIZE 20
 
@@ -42,11 +43,13 @@ typedef struct {
   GtkWidget *entry_term;
   GtkWidget *entry_rate;
   double value_amount;
-  int value_term;
+  double value_term;
   double value_rate;
   GtkWidget *label[15];
   GtkWidget *message;
   GtkWidget *text_wall;
+  GtkWidget *scrollbar;
+  GtkWidget *scrolled_window;
   int credit_type;
 } s21_credit;
 
