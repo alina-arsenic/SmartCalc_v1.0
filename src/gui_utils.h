@@ -48,26 +48,65 @@ typedef struct {
   GtkWidget *label[15];
   GtkWidget *message;
   GtkWidget *text_wall;
-  GtkWidget *scrollbar;
   GtkWidget *scrolled_window;
   int credit_type;
 } s21_credit;
 
+typedef struct {
+  GtkWidget *grid;
+  struct s21_entry {
+    GtkWidget *amount;
+    GtkWidget *term;
+    GtkWidget *tax;
+    GtkWidget *rate;
+  } entry;
+  struct s21_value {
+    double amount;
+    double term;
+    double tax;
+    double rate;
+  } value;
+  GtkWidget *pay_type_box;
+  GtkWidget *capital_box;
+  int pay_type;
+  int capital;
+  struct s21_text {
+    GtkWidget *in_box;
+    GtkWidget *out_box;
+    GtkWidget *result_box;
+    GtkWidget *in_window;
+    GtkWidget *out_window;
+    GtkWidget *result_window;
+  } text;
+  GtkWidget *label;
+  GtkWidget *message;
+  GtkWidget *button[2];
+} s21_deposit;
+
 extern s21_limits limits;
 extern s21_numpad numpad;
 extern s21_credit credit;
+extern s21_deposit deposit;
+
+int parse_double(char *str, double *result);
+
+void calculator_initialization();
+void credit_initialization();
+void deposit_initialization();
 
 void calculate(GtkButton *button, gpointer data);
-gboolean on_draw (GtkWidget *widget, GdkEventExpose *event, gpointer data);
-int parse_double(char *str, double *result);
 int make_plot();
-
-void initialize_buttons(s21_numpad *numpad);
-void initialize_upper_grid(GtkWidget *upper_grid, s21_limits *limits);
 void draw_axis(cairo_t *cr, s21_limits lims);
 int draw_plot(cairo_t *cr, s21_limits lims, char *expr, double *min, double *max);
-
 void fill_area(cairo_t *cr);
 void draw_border(cairo_t *cr);
+
+int check_input_credit();
+void credit_calculate(GtkButton *button, gpointer data);
+void credit_reset(GtkButton *button, gpointer data);
+
+int check_input_deposit();
+void deposit_calculate(GtkButton *button, gpointer data);
+void deposit_reset(GtkButton *button, gpointer data);
 
 #endif  //  SRC_GUI_UTILS_H_

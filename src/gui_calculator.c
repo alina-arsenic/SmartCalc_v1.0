@@ -2,12 +2,6 @@
 #include "gui_utils.h"
 #include "lib/s21_notation.h"
 
-gboolean on_draw (GtkWidget *widget, GdkEventExpose *event, gpointer data) {
-	make_plot();
-    memset(numpad.expr, 0, MAX_LEN);
-	return FALSE;
-}
-
 int check_x_count(char *expr) {
 	int count = 0;
 	char *ptr = expr;
