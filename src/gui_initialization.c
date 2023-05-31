@@ -283,12 +283,6 @@ void deposit_initialization() {
     deposit.label = gtk_label_new("month");
     gtk_label_set_xalign(GTK_LABEL(deposit.label), 0.0);
     gtk_list_box_prepend(GTK_LIST_BOX(deposit.pay_type_box), deposit.label);
-    deposit.label = gtk_label_new("week");
-    gtk_label_set_xalign(GTK_LABEL(deposit.label), 0.0);
-    gtk_list_box_prepend(GTK_LIST_BOX(deposit.pay_type_box), deposit.label);
-    deposit.label = gtk_label_new("day");
-    gtk_label_set_xalign(GTK_LABEL(deposit.label), 0.0);
-    gtk_list_box_prepend(GTK_LIST_BOX(deposit.pay_type_box), deposit.label);
 
     gtk_grid_attach(GTK_GRID(deposit.grid), deposit.pay_type_box, 1, 4, 1, 1);
 
@@ -324,7 +318,7 @@ void deposit_initialization() {
     gtk_frame_set_shadow_type(GTK_FRAME(out_frame), GTK_SHADOW_OUT);
     gtk_grid_attach(GTK_GRID(deposit.grid), out_frame, 1, 7, 2, 1);
 
-    deposit.message = gtk_label_new("The format of list entries is: ' dd.mm.yy   summ '");
+    deposit.message = gtk_label_new("The format of list entries is: 'dd.mm.yyyy  summ'");
     gtk_label_set_xalign(GTK_LABEL(deposit.message), 0.0);
     gtk_grid_attach(GTK_GRID(deposit.grid), deposit.message, 0, 9, 4, 1);
 
@@ -342,5 +336,15 @@ void deposit_initialization() {
 	gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(result_window), GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
 	gtk_widget_set_size_request(result_window, APP_WIDTH - BORDER_SIZE*2, APP_HEIGHT/8);
     gtk_grid_attach(GTK_GRID(deposit.grid), result_window, 0, 10, 4, 1);
+
+	gtk_grid_insert_row(GTK_GRID(deposit.grid), 1);
+	deposit.label = gtk_label_new("Start of term");
+    gtk_label_set_xalign(GTK_LABEL(deposit.label), 0.0);
+    gtk_grid_attach(GTK_GRID(deposit.grid), deposit.label, 0, 1, 1, 1);
+	deposit.entry.date = gtk_entry_new();
+    gtk_grid_attach(GTK_GRID(deposit.grid), deposit.entry.date, 1, 1, 1, 1);
+	deposit.label = gtk_label_new(" dd.mm.yyyy");
+    gtk_label_set_xalign(GTK_LABEL(deposit.label), 0.0);
+    gtk_grid_attach(GTK_GRID(deposit.grid), deposit.label, 2, 1, 1, 1);
 
 }
