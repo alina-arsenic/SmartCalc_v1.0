@@ -228,43 +228,51 @@ void deposit_initialization() {
     GtkWidget *space;
 
     deposit.entry.amount = gtk_entry_new();
+	deposit.entry.date = gtk_entry_new();
     deposit.entry.rate = gtk_entry_new();
     deposit.entry.tax = gtk_entry_new();
     deposit.entry.term = gtk_entry_new();
     gtk_grid_attach(GTK_GRID(deposit.grid), deposit.entry.amount, 1, 0, 1, 1);
-    gtk_grid_attach(GTK_GRID(deposit.grid), deposit.entry.rate, 1, 1, 1, 1);
-    gtk_grid_attach(GTK_GRID(deposit.grid), deposit.entry.tax, 1, 2, 1, 1);
-    gtk_grid_attach(GTK_GRID(deposit.grid), deposit.entry.term, 1, 3, 1, 1);
+	gtk_grid_attach(GTK_GRID(deposit.grid), deposit.entry.date, 1, 1, 1, 1);
+	gtk_grid_attach(GTK_GRID(deposit.grid), deposit.entry.term, 1, 2, 1, 1);
+    gtk_grid_attach(GTK_GRID(deposit.grid), deposit.entry.rate, 1, 3, 1, 1);
+    gtk_grid_attach(GTK_GRID(deposit.grid), deposit.entry.tax, 1, 4, 1, 1);
 
     deposit.label = gtk_label_new("Deposit amount");
     gtk_label_set_xalign(GTK_LABEL(deposit.label), 0.0);
     gtk_grid_attach(GTK_GRID(deposit.grid), deposit.label, 0, 0, 1, 1);
-    deposit.label = gtk_label_new("Deposit term");
+	deposit.label = gtk_label_new("Start of term");
     gtk_label_set_xalign(GTK_LABEL(deposit.label), 0.0);
     gtk_grid_attach(GTK_GRID(deposit.grid), deposit.label, 0, 1, 1, 1);
-    deposit.label = gtk_label_new("Interest rate");
+    deposit.label = gtk_label_new("Deposit term");
     gtk_label_set_xalign(GTK_LABEL(deposit.label), 0.0);
     gtk_grid_attach(GTK_GRID(deposit.grid), deposit.label, 0, 2, 1, 1);
-    deposit.label = gtk_label_new("Key rate");
+    deposit.label = gtk_label_new("Interest rate");
     gtk_label_set_xalign(GTK_LABEL(deposit.label), 0.0);
     gtk_grid_attach(GTK_GRID(deposit.grid), deposit.label, 0, 3, 1, 1);
-    deposit.label = gtk_label_new("Periodicity of payments");
+    deposit.label = gtk_label_new("Key rate");
+    gtk_label_set_xalign(GTK_LABEL(deposit.label), 0.0);
+    gtk_grid_attach(GTK_GRID(deposit.grid), deposit.label, 0, 4, 1, 1);
+    deposit.label = gtk_label_new("Periodicity of payments    ");
     gtk_label_set_xalign(GTK_LABEL(deposit.label), 0.0);
     gtk_label_set_yalign(GTK_LABEL(deposit.label), 0.0);
-    gtk_grid_attach(GTK_GRID(deposit.grid), deposit.label, 0, 4, 1, 1);
+    gtk_grid_attach(GTK_GRID(deposit.grid), deposit.label, 0, 5, 1, 1);
 
     deposit.label = gtk_label_new(" RUB");
     gtk_label_set_xalign(GTK_LABEL(deposit.label), 0.0);
     gtk_grid_attach(GTK_GRID(deposit.grid), deposit.label, 2, 0, 1, 1);
-    deposit.label = gtk_label_new(" Months");
+	deposit.label = gtk_label_new(" dd.mm.yyyy");
     gtk_label_set_xalign(GTK_LABEL(deposit.label), 0.0);
     gtk_grid_attach(GTK_GRID(deposit.grid), deposit.label, 2, 1, 1, 1);
-    deposit.label = gtk_label_new(" \%");
+    deposit.label = gtk_label_new(" Months");
     gtk_label_set_xalign(GTK_LABEL(deposit.label), 0.0);
     gtk_grid_attach(GTK_GRID(deposit.grid), deposit.label, 2, 2, 1, 1);
     deposit.label = gtk_label_new(" \%");
     gtk_label_set_xalign(GTK_LABEL(deposit.label), 0.0);
     gtk_grid_attach(GTK_GRID(deposit.grid), deposit.label, 2, 3, 1, 1);
+    deposit.label = gtk_label_new(" \%");
+    gtk_label_set_xalign(GTK_LABEL(deposit.label), 0.0);
+    gtk_grid_attach(GTK_GRID(deposit.grid), deposit.label, 2, 4, 1, 1);
 
     deposit.pay_type_box = gtk_list_box_new();
 
@@ -284,50 +292,44 @@ void deposit_initialization() {
     gtk_label_set_xalign(GTK_LABEL(deposit.label), 0.0);
     gtk_list_box_prepend(GTK_LIST_BOX(deposit.pay_type_box), deposit.label);
 
-    gtk_grid_attach(GTK_GRID(deposit.grid), deposit.pay_type_box, 1, 4, 1, 1);
+    gtk_grid_attach(GTK_GRID(deposit.grid), deposit.pay_type_box, 1, 5, 1, 1);
 
     deposit.capital_box = gtk_check_button_new_with_label("capitalization");
-    gtk_grid_attach(GTK_GRID(deposit.grid), deposit.capital_box, 1, 5, 1, 1);
+    gtk_grid_attach(GTK_GRID(deposit.grid), deposit.capital_box, 1, 6, 1, 1);
 
-    deposit.label = gtk_label_new("Replenishment list");
-    gtk_label_set_xalign(GTK_LABEL(deposit.label), 0.0);
-    gtk_label_set_yalign(GTK_LABEL(deposit.label), 0.0);
-    gtk_grid_attach(GTK_GRID(deposit.grid), deposit.label, 0, 6, 1, 1);
-    deposit.label = gtk_label_new("Withdrawals list");
+    deposit.label = gtk_label_new("Replenishment list ->");
     gtk_label_set_xalign(GTK_LABEL(deposit.label), 0.0);
     gtk_label_set_yalign(GTK_LABEL(deposit.label), 0.0);
     gtk_grid_attach(GTK_GRID(deposit.grid), deposit.label, 0, 7, 1, 1);
+    deposit.label = gtk_label_new("Withdrawals list ->");
+    gtk_label_set_xalign(GTK_LABEL(deposit.label), 0.0);
+    gtk_label_set_yalign(GTK_LABEL(deposit.label), 0.0);
+    gtk_grid_attach(GTK_GRID(deposit.grid), deposit.label, 0, 8, 1, 1);
 
     GtkWidget *in_window = gtk_scrolled_window_new(NULL, NULL);
     deposit.text.in_box = gtk_text_view_new();
 	gtk_container_add (GTK_CONTAINER(in_window), deposit.text.in_box);
 	gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(in_window), GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
-	gtk_widget_set_size_request(in_window, APP_WIDTH/2, APP_HEIGHT/15);
-    GtkWidget *in_frame = gtk_frame_new(NULL);
-    gtk_frame_set_label_widget(GTK_FRAME(in_frame), in_window);
-    gtk_frame_set_shadow_type(GTK_FRAME(in_frame), GTK_SHADOW_OUT);
-    gtk_grid_attach(GTK_GRID(deposit.grid), in_frame, 1, 6, 2, 1);
+	gtk_widget_set_size_request(in_window, APP_WIDTH/2, APP_HEIGHT/6);
+    gtk_grid_attach(GTK_GRID(deposit.grid), in_window, 1, 7, 2, 1);
     
     GtkWidget *out_window = gtk_scrolled_window_new(NULL, NULL);
     deposit.text.out_box = gtk_text_view_new();
 	gtk_container_add (GTK_CONTAINER(out_window), deposit.text.out_box);
 	gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(out_window), GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
-	gtk_widget_set_size_request(out_window, APP_WIDTH/2, APP_HEIGHT/15);
-    GtkWidget *out_frame = gtk_frame_new(NULL);
-    gtk_frame_set_label_widget(GTK_FRAME(out_frame), out_window);
-    gtk_frame_set_shadow_type(GTK_FRAME(out_frame), GTK_SHADOW_OUT);
-    gtk_grid_attach(GTK_GRID(deposit.grid), out_frame, 1, 7, 2, 1);
+	gtk_widget_set_size_request(out_window, APP_WIDTH/2, APP_HEIGHT/6);
+    gtk_grid_attach(GTK_GRID(deposit.grid), out_window, 1, 8, 2, 1);
 
     deposit.message = gtk_label_new("The format of list entries is: 'dd.mm.yyyy  summ'");
     gtk_label_set_xalign(GTK_LABEL(deposit.message), 0.0);
-    gtk_grid_attach(GTK_GRID(deposit.grid), deposit.message, 0, 9, 4, 1);
+    gtk_grid_attach(GTK_GRID(deposit.grid), deposit.message, 0, 10, 4, 1);
 
     deposit.button[0] = gtk_button_new_with_label("Reset");
 	deposit.button[1] = gtk_button_new_with_label("Calculate");
     g_signal_connect(deposit.button[0], "clicked", G_CALLBACK(deposit_reset), NULL);
 	g_signal_connect(deposit.button[1], "clicked", G_CALLBACK(deposit_calculate), NULL);
-    gtk_grid_attach(GTK_GRID(deposit.grid), deposit.button[0], 0, 8, 1, 1);
-    gtk_grid_attach(GTK_GRID(deposit.grid), deposit.button[1], 1, 8, 1, 1);
+    gtk_grid_attach(GTK_GRID(deposit.grid), deposit.button[0], 0, 9, 1, 1);
+    gtk_grid_attach(GTK_GRID(deposit.grid), deposit.button[1], 1, 9, 1, 1);
 
     GtkWidget *result_window = gtk_scrolled_window_new(NULL, NULL);
     deposit.text.result_box = gtk_text_view_new();
@@ -335,16 +337,25 @@ void deposit_initialization() {
 	gtk_container_add (GTK_CONTAINER(result_window), deposit.text.result_box);
 	gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(result_window), GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
 	gtk_widget_set_size_request(result_window, APP_WIDTH - BORDER_SIZE*2, APP_HEIGHT/8);
-    gtk_grid_attach(GTK_GRID(deposit.grid), result_window, 0, 10, 4, 1);
+    gtk_grid_attach(GTK_GRID(deposit.grid), result_window, 0, 11, 4, 1);
 
-	gtk_grid_insert_row(GTK_GRID(deposit.grid), 1);
-	deposit.label = gtk_label_new("Start of term");
-    gtk_label_set_xalign(GTK_LABEL(deposit.label), 0.0);
-    gtk_grid_attach(GTK_GRID(deposit.grid), deposit.label, 0, 1, 1, 1);
-	deposit.entry.date = gtk_entry_new();
-    gtk_grid_attach(GTK_GRID(deposit.grid), deposit.entry.date, 1, 1, 1, 1);
-	deposit.label = gtk_label_new(" dd.mm.yyyy");
-    gtk_label_set_xalign(GTK_LABEL(deposit.label), 0.0);
-    gtk_grid_attach(GTK_GRID(deposit.grid), deposit.label, 2, 1, 1, 1);
+	GtkWidget *image = gtk_image_new_from_file("images/kitty3.png");
+    gtk_grid_attach(GTK_GRID(deposit.grid), image, 2, 5, 1, 2);
 
+	gtk_grid_insert_row(GTK_GRID(deposit.grid), 10);
+	space = gtk_label_new("");
+	gtk_grid_attach(GTK_GRID(deposit.grid), space, 0, 10, 1, 1);
+	gtk_grid_insert_row(GTK_GRID(deposit.grid), 6);
+	space = gtk_label_new("");
+	gtk_grid_attach(GTK_GRID(deposit.grid), space, 0, 6, 1, 1);
+	gtk_grid_insert_row(GTK_GRID(deposit.grid), 5);
+	space = gtk_label_new("");
+	gtk_grid_attach(GTK_GRID(deposit.grid), space, 0, 5, 1, 1);
+	gtk_grid_insert_row(GTK_GRID(deposit.grid), 0);
+	space = gtk_label_new("");
+	gtk_grid_attach(GTK_GRID(deposit.grid), space, 0, 0, 1, 1);
+	gtk_grid_insert_row(GTK_GRID(deposit.grid), 10);
+	space = gtk_label_new("");
+	gtk_grid_attach(GTK_GRID(deposit.grid), space, 0, 10, 1, 1);
+	
 }

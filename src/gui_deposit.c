@@ -98,7 +98,12 @@ int check_input_deposit() {
 	if (!selected) {
 		return 7;
 	}
-	deposit.pay_type = gtk_list_box_row_get_index(selected);
+	int index = gtk_list_box_row_get_index(selected);
+	if (index == 0) deposit.pay_type = 1;
+	else if (index == 1) deposit.pay_type = 3;
+	else if (index == 2) deposit.pay_type = 6;
+	else if (index == 3) deposit.pay_type = 12;
+	else if (index == 4) deposit.pay_type = deposit.value.term;
 
 	if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(deposit.capital_box))) {
 		deposit.capital = 1;
@@ -109,9 +114,201 @@ int check_input_deposit() {
     return 0;
 }
 
+int parse_pay_entry(char *buf, s21_date *date, double *sum) {
+	char entry[BUFFER_LENGTH] = {0};
+	char temp[BUFFER_LENGTH] = {0};
+	int i = 0;
+	while (buf[i] && buf[i] != '\n') i++;
+	strncat(entry, buf, i);
+	if (i < strlen(buf)) {
+		strcat(temp, buf+i+1);
+		memset(buf, 0, BUFFER_LENGTH);
+		strcat(buf, temp);
+	} else {
+		memset(buf, 0, BUFFER_LENGTH);
+	}
+	i = 0;
+	while (is_digit(entry[i])) i++;
+	if (entry[i] != '.') {
+		return 1;
+	}
+	i++;
+	while (is_digit(entry[i])) i++;
+	if (entry[i] != '.') {
+		return 1;
+	}
+	i++;
+	while (is_digit(entry[i])) i++;
+	if (entry[i] != ' ') {
+		return 1;
+	}
+	i++;
+	char *dot_point = strchr(entry+i, '.');
+	while (is_digit(entry[i])) i++;
+	if (entry[i] == '.' && is_digit(entry[i+1])) {
+		i++;
+		while (is_digit(entry[i])) i++;
+	}
+	if (strlen(entry) != i) {
+		return 1;
+	}
+	
+	double test = 0;
+	sscanf(entry, "%d.%d.%d %lf", &date->day, &date->month, &date->year, &test);
+	if (dot_point) *dot_point = ',';
+	sscanf(entry, "%d.%d.%d %lf", &date->day, &date->month, &date->year, sum);
+	if (fabs(test) > fabs(*sum)) *sum = test;
+	if (date->month < 1 || date->month > 12 || date->day < 1 || date->day > month_days(date->month, year_days(date->year))) {
+		return 1;
+	}
+
+	return 0;
+}
+
+// 2 - дата1 > дата2
+// 1 - дата1 <= дата2 НЕ БОЛЕЕ чем на месяц
+// 0 - дата1 < дата2 БОЛЕЕ чем на месяц
+int compare_dates(s21_date start, s21_date end) {
+	if (start.year > end.year) {
+		return 2;
+	}
+	if (start.year < end.year) {
+		if (start.year+1 == end.year && start.month == 12 && end.month == 1 && start.day > end.day) {
+			return 1;
+		} else {
+			return 0;
+		}
+	}
+	if (start.month > end.month) {
+		return 2;
+	}
+	if (start.month < end.month) {
+		if (start.month+1 == end.month && start.day > end.day) {
+			return 1;
+		} else {
+			return 0;
+		}
+	}
+	if (start.day > end.day) {
+		return 2;
+	}
+	return 1;
+}
+
 int deposit_fun(char *result) {
-	//
-	//
+	double total_percents = 0;
+	double month_percents = 0;
+	double period_percents = 0;
+	double year_percents = 0;
+	double tax = 0;
+	double left = deposit.value.amount;
+	double delta = 0;
+	char buf[MAX_LEN];
+	double no_tax_summ = 1000000.0 * deposit.value.tax / 100;
+	s21_date current;
+	current.day = deposit.date.day;
+	current.month = deposit.date.month;
+	current.year = deposit.date.year;
+
+	GtkTextIter start, end;
+    GtkTextBuffer *buffer;
+	buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(deposit.text.in_box));
+    gtk_text_buffer_get_bounds(buffer, &start, &end);
+	char in_buf[BUFFER_LENGTH] = {0};
+	strcat(in_buf, gtk_text_buffer_get_text(buffer, &start, &end, FALSE));
+	buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(deposit.text.out_box));
+    gtk_text_buffer_get_bounds(buffer, &start, &end);
+	char out_buf[BUFFER_LENGTH] = {0};
+	strcat(out_buf, gtk_text_buffer_get_text(buffer, &start, &end, FALSE));
+
+	s21_date in_date, out_date;
+	double in_sum, out_sum;
+	int flag_in = 0, flag_out = 0;
+
+	int count = 0;
+	int code = 0, compare;
+	while (count < deposit.value.term) {
+		if (out_buf[0] || flag_out) {
+			if (!flag_out) code = parse_pay_entry(out_buf, &out_date, &out_sum);
+			if (code) return 1;
+			compare = compare_dates(current, out_date);
+			while (compare == 1 && out_buf[0]) {
+				delta -= out_sum;
+				code = parse_pay_entry(out_buf, &out_date, &out_sum);
+				if (code) return 1;
+				compare = compare_dates(current, out_date);
+			}
+			if (compare == 2) {
+				return 1;
+			} else if (compare == 1) {
+				delta -= out_sum;
+				flag_out = 0;
+			} else if (compare == 0) {
+				flag_out = 1;
+			}
+		}
+		if (in_buf[0] || flag_in) {
+			if (!flag_in) code = parse_pay_entry(in_buf, &in_date, &in_sum);
+			if (code) return 1;
+			compare = compare_dates(current, in_date);
+			while (compare == 1 && in_buf[0]) {
+				delta += in_sum;
+				code = parse_pay_entry(in_buf, &in_date, &in_sum);
+				if (code) return 1;
+				compare = compare_dates(current, in_date);
+			}
+			if (compare == 2) {
+				return 1;
+			} else if (compare == 1) {
+				delta += in_sum;
+				flag_in = 0;
+			} else if (compare == 0) {
+				flag_in = 1;
+			}
+		}
+		if (delta < 0) {
+			left += delta;
+			if (left < 0) return 1;
+		}
+		month_percents = left * deposit.value.rate / 100 / 12;
+		period_percents += month_percents;
+		year_percents += month_percents;
+		total_percents += month_percents;
+		if (deposit.capital) {
+			if ((count+1) % deposit.pay_type == 0) {
+				left += period_percents;
+				period_percents = 0;
+			}
+		}
+		if (delta > 0) {
+			left += delta;
+		}
+		delta = 0;
+		current.month += 1;
+		if (current.month > 12) {
+			current.month = 1;
+			current.year += 1;
+			if (year_percents - no_tax_summ > 0) {
+				tax += (year_percents - no_tax_summ) * 0.13;
+			}
+			year_percents = 0;
+		}
+		count++;
+	}
+	if (flag_in || flag_out) return 1;
+	if (deposit.capital) left += period_percents;
+	if (year_percents - no_tax_summ > 0) {
+		tax += (year_percents - no_tax_summ) * 0.13;
+	}
+	memset(buf, 0, MAX_LEN);
+	sprintf(buf, "Accrued interest:                        %lf\n", total_percents);
+	strcat(result, buf);
+	memset(buf, 0, MAX_LEN);
+	sprintf(buf, "Tax:                                                     %lf\n", tax);
+	strcat(result, buf);
+	memset(buf, 0, MAX_LEN);
+	sprintf(buf, "Deposit amount in the end:  %lf\n", left);
+	strcat(result, buf);
 	return 0;
 }
 
@@ -129,9 +326,9 @@ void deposit_calculate(GtkButton *button, gpointer data) {
 	} else if (code == 3) {
 		gtk_label_set_text(GTK_LABEL(deposit.message), "Deposit amount must be >0 and <=1000000000000 RUB");
 	} else if (code == 4) {
-		gtk_label_set_text(GTK_LABEL(deposit.message), "Term must be >=1 and <=240 mounth");
+		gtk_label_set_text(GTK_LABEL(deposit.message), "Term must be an integer >=1 and <=240");
 	} else if (code == 5) {
-		gtk_label_set_text(GTK_LABEL(deposit.message), "Rates must be an integer >0 and <=99 \%");
+		gtk_label_set_text(GTK_LABEL(deposit.message), "Rates must be >0 and <=99 \%");
 	} else if (code == 6) {
 		gtk_label_set_text(GTK_LABEL(deposit.message), "Incorrect date of start of term");
 	} else if (code == 7) {

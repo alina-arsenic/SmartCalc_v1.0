@@ -53,6 +53,12 @@ typedef struct {
 } s21_credit;
 
 typedef struct {
+    int day;
+    int month;
+    int year;
+  } s21_date;
+
+typedef struct {
   GtkWidget *grid;
   struct s21_entry {
     GtkWidget *amount;
@@ -61,11 +67,7 @@ typedef struct {
     GtkWidget *tax;
     GtkWidget *rate;
   } entry;
-  struct s21_date {
-    int day;
-    int month;
-    int year;
-  } date;
+  s21_date date;
   struct s21_value {
     double amount;
     double term;
