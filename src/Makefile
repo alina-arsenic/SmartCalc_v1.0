@@ -15,7 +15,6 @@ INSTALL_DIR = ~
 FOLDER_NAME = SmartCalculator
 
 APP_DIR = $(INSTALL_DIR)/$(FOLDER_NAME)
-DISTRIBUTIVE_DIR = $(INSTALL_DIR)/$(FOLDER_NAME)/dist
 
 ifeq ($(PLATFORM), Linux)
 OPEN = xdg-open 
@@ -25,11 +24,11 @@ endif
 
 all: clean gcov_report dist install
 
-dist: clean
-	mkdir -p $(DISTRIBUTIVE_DIR)
-	tar -cvzf $(DISTRIBUTIVE_DIR)/Calculator.tar.gz ../*
+dist:
+	mkdir -p $(APP_DIR)/dist
+	tar -cvzf $(APP_DIR)/dist/Calculator.tar.gz ../*
 
-install: clean
+install:
 	mkdir -p $(APP_DIR)/images
 	gcc $(FLAGS) -o $(APP_DIR)/app $(LIB_SRC) $(GUI_SRC) $(LIBS)
 	cp images/* $(APP_DIR)/images/
