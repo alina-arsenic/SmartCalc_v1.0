@@ -11,31 +11,40 @@ LIB_SRC = lib/*.c
 GUI_SRC = gui_*.c
 TEST_SRC = tests/*.c
 
+INSTALL_DIR = ~
+FOLDER_NAME = SmartCalculator
+
+APP_DIR = $(INSTALL_DIR)/$(FOLDER_NAME)
+DISTRIBUTIVE_DIR = $(INSTALL_DIR)/$(FOLDER_NAME)/dist
+
 ifeq ($(PLATFORM), Linux)
 OPEN = xdg-open 
 else
 OPEN = open
 endif
 
-all: clean s21_smart_calc.a test gcov_report gui
+all: clean gcov_report dist install
 
-gui: s21_smart_calc.a
-	gcc $(FLAGS) -o calculator $(LIB_SRC) $(GUI_SRC) $(LIBS)
-	./calculator
+dist: clean
+	mkdir -p $(DISTRIBUTIVE_DIR)
+	tar -cvzf $(DISTRIBUTIVE_DIR)/Calculator.tar.gz ../*
 
-#install
-#uninstall
+install: clean
+	mkdir -p $(APP_DIR)/images
+	gcc $(FLAGS) -o $(APP_DIR)/app $(LIB_SRC) $(GUI_SRC) $(LIBS)
+	cp images/* $(APP_DIR)/images/
+	install $(APP_DIR)/app $(APP_DIR)/Calculator
+	rm -rf $(APP_DIR)/app
 
-clean:
+uninstall:
+	rm -rf $(APP_DIR)
+
+clean: uninstall
 	rm -f *.o *.a *.gcda *.gcno *.info
 	rm -fr gcov_report ./tests/all_tests*
 	rm -f ./a.out
 	rm -rf ./tests/*.o ./tests/*.a ./tests/*.gcda ./tests/*.gcno ./tests/*.info
 	rm -rf VALGRIND.txt
-	rm -rf calculator
-
-#dvi
-#dist
 
 s21_smart_calc.a:
 	gcc $(CONTROL_FLAGS) $(FLAGS) -c $(LIB_SRC) $(LIBS)
@@ -53,6 +62,12 @@ gcov_report: test
 	@rm -rf ./*.gc* ./tests/*.gc*
 	$(OPEN) gcov_report/index.html
 
-debug:
-#	gcc debug.c $(FLAGS) $(LIB_SRC) $(LIBS); ./a.out
-	gcc debug.c $(FLAGS) $(LIBS); ./a.out
+style:
+	cppcheck *.c *.h
+	cp ../materials/linters/.clang-format ./
+#clang-format -i *.c *.h tests/*.c
+	clang-format -n *.c *.h tests/*.c
+	rm -f ./.clang-format
+
+valgrind:
+	valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes --verbose --log-file=VALGRIND.txt ./tests/all_tests
